@@ -1,0 +1,1359 @@
+
+
+
+## using mice package
+
+V1 = as.vector(unique(subset(gp6,ASSET_TYPE==30)[,1:1]))
+V2 = as.vector(unique(subset(gp6,ASSET_TYPE!=3000000)[,1:1]))
+str(setdiff(V2,V1))
+nosp.df = as.data.frame(setdiff(V2,V1))
+nosp.df$HASSP=0
+sp.df = as.data.frame(V1)
+sp.df$HASSP=1
+names(sp.df)[1]='X'
+names(nosp.df)[1]='X'
+hassp=rbind(sp.df, nosp.df)
+
+
+## merge data frames by ID and country
+# total <- merge(data frameA,data frameB,by=c(ID,Country)) 
+
+
+table(hassp$HASSP)
+
+
+## got the HASSP going
+## now to get the counts per portfolio
+#seq num just for the sake of it
+s = as.data.frame(tapply(gp6$SEQUENCE_NO,gp6$PORTFOLIO_NO,length))
+#sticky situation with col names LTH and X
+write.csv(s,s.csv)
+## changed column name to X in Excel!
+s = read.csv(s.csv)
+
+
+full.df = merge(s,hassp, by=X)
+
+mod1 = glm(HASSP~LTH, data=full.df, family=binomial)
+
+
+Call:  glm(formula = HASSP ~ LTH, family = binomial, data = full.df)
+Coefficients:
+(Intercept)          LTH  
+   -1.95957      0.06735  
+
+Degrees of Freedom: 2074 Total (i.e. Null);  2073 Residual
+Null Deviance:      2225 
+Residual Deviance: 1963         AIC: 1967
+
+
+
+
+
+x = tapply(gp6$VALUE_IN_VAL_CCY,gp6$PORTFOLIO_NO,sum)
+write.csv(x,x.csv)
+# modify the csv to set the col names right, X and TOT
+x = read.csv(x.csv)
+
+full.df = merge(x,full.df, by=X)
+
+
+
+mod2
+
+Call:  glm(formula = HASSP ~ LTH + TOT, family = binomial, data = full.df)
+
+Coefficients:
+(Intercept)          LTH          TOT  
+ -1.932e+00    7.765e-02   -9.984e-08  
+
+Degrees of Freedom: 2055 Total (i.e. Null);  2053 Residual
+  (19 observations deleted due to missingness)
+Null Deviance:      2201 
+Residual Deviance: 1918         AIC: 1924
+
+
+********************see****************************************
+http://data.princeton.edu/R/glms.html
+
+
+
+[later discontinued . separated approach]
+V1 = as.vector(unique(subset(gp6,SUB_ASSET_TYPE==22450 | SUB_ASSET_TYPE==22402)[,1:1]))
+V2 = as.vector(unique(subset(gp6,ASSET_TYPE!=90909090)[,1:1]))
+V3 = setdiff(V2,V1)
+
+W1 = as.data.frame(V1)
+W3 = as.data.frame(V3)
+
+names(W1)[1]='X'
+names(W3)[1]='X'
+
+rbind(W1,W3)
+
+full.df = merge(W,full.df,by=X)
+
+> mod3 = glm(formula = HASSP ~ LTH + TOT + HEPE, family = binomial, data = full.df)
+> mod3
+
+Call:  glm(formula = HASSP ~ LTH + TOT + HEPE, family = binomial, 
+    data = full.df)
+
+Coefficients:
+(Intercept)          LTH          TOT         HEPE  
+ -1.951e+00    7.277e-02   -9.767e-08    6.060e-01  
+
+Degrees of Freedom: 2055 Total (i.e. Null);  2052 Residual
+  (19 observations deleted due to missingness)
+Null Deviance:      2201 
+Residual Deviance: 1908         AIC: 1916
+
+
+#####
+1-pchisq(residual deviance,residual degrees of freedom)
+greater the better!
+# we have already reached 99% ...
+# meaning 99% sure that the model is not a random fluctuation
+
+
+#to discover all non sp sub asset types
+unique(subset(gp6,ASSET_TYPE!=30)['SUB_ASSET_TYPE'])
+
+
+
+## routine to create the column
+SAT = 22200
+V1  = unique(subset(gp6,SUB_ASSET_TYPE==SAT)[1])
+nrow(V1)
+V2  = unique(subset(gp6,SUB_ASSET_TYPE!=-999999999)[1])
+nrow(V2)
+V3 = setdiff(V1,V2)
+nrow(V3)
+
+
+########################################################################################
+## routine to create the column
+################################
+SAT = 22500
+################################
+
+V1<-NULL
+V2<-NULL
+T<-NULL
+D<-NULL
+X<-NULL
+Y<-NULL
+R<-NULL
+
+V1  = as.vector(unique(subset(gp6,SUB_ASSET_TYPE==SAT)[1]))
+nrow(V1)
+V2  = as.vector(unique(subset(gp6,SUB_ASSET_TYPE!=-999999999)[1]))
+nrow(V2)
+V3 = setdiff(V2,V1)
+nrow(V3)
+
+## nice trick for diff of data frames
+V1$fromV1=TRUE
+V2$fromV2=TRUE
+T = merge(V1,V2, all=TRUE)
+nrow(subset(T, is.na(fromV1)))
+D = subset(T, is.na(fromV1))
+
+X=D[1]
+Y=V1[1]
+################################
+X$SHARES=0
+Y$SHARES=1
+################################
+R = merge(X,Y, all=TRUE)
+nrow(R)
+names(R)[1]='X'
+write.csv(full.df,full.csv)
+full.df=merge(full.df,R, by='X')
+
+
+mod4 = glm(formula = HASSP ~ LTH + TOT + HEPE + PERPBONDS, family = binomial, data = full.df)
+1-pchisq(2200.7,2055) is 0.01 for Null
+1-pchisq(1895.7,2051) is 0.993 for Residual
+
+mod5 = glm(formula = HASSP ~ LTH + TOT + HEPE + PERPBONDS + EUROBONDS, family = binomial, data = full.df)
+
+mod6 = glm(formula = HASSP ~ LTH + TOT + HEPE + PERPBONDS + EUROBONDS + MUTFUNDS, family = binomial, data = full.df)
+
+
+################################################################################
+
+s = as.data.frame(tapply(gp6$SEQUENCE_NO,gp6$PORTFOLIO_NO,length))
+
+instead use below to get a df
+
+s = aggregate(gp6$SEQUENCE_NO, list(gp6$PORTFOLIO_NO), length)
+
+
+s = aggregate(gp6$VALUE_IN_VAL_CCY, list(gp6$PORTFOLIO_NO), sum)
+names(s)[1]='X'
+names(s)[2]='TOT'
+merge(full.df, s, by='X')
+
+####
+some R magic!!!!!!!!!!!
+indx = grep('VALUE_IN_VAL',colnames(gp6))
+gp6[indx][is.na(gp6[indx])]<-0
+#similarly ... how does this select?
+gp6[1][gp6['VALUE_IN_VAL_CCY']<1000]   #1 selects the first column and then it filters
+
+
+
+
+
+===================================================================
+
+s = aggregate(ASSETS$VALUE_IN_VAL_CCY, list(ASSETS$PORTFOLIO_NO), sum)
+names(s)[1]='X'
+names(s)[2]='TOTASSETS'
+x = merge(full.df, s, by='X')
+s=NULL
+s = aggregate(LIAB$VALUE_IN_VAL_CCY, list(LIAB$PORTFOLIO_NO), sum)
+names(s)[1]='X'
+names(s)[2]='TOTLIAB'
+x= merge(x, s, by='X')
+
+
+
+MAF
+
+====================================================================
+
+################################
+SAT= '22500'
+XNAM='SHARES'
+
+BASE = subset(gp6, SUB_ASSET_TYPE==SAT)
+nrow(BASE)
+# s = aggregate(BASE$VALUE_IN_VAL_CCY, list(BASE$PORTFOLIO_NO), sum)
+s = aggregate(BASE$VALUE_IN_VAL_CCY, list(BASE$PORTFOLIO_NO), length)
+
+names(s)[1]='X'
+names(s)[2]=XNAM
+full.df = merge(full.df, s, by='X', all=TRUE)
+full.df[XNAM][is.na(full.df[XNAM])]
+full.df[XNAM][is.na(full.df[XNAM])] <- 0
+# full.df[XNAM][full.df[XNAM]>0] <- 1
+
+mod7 = glm(formula = HASSP ~ FOREX+ LTH + TOT + EUROBONDS + MUTFUNDS  + SHARES+ OTHERFUNDS +PREFSHARE+ HEDGEFUN + PRIVEQ, family = binomial, data = full.df)
+
+mod7a = glm(formula = HASSP ~ LTH + TOT + EUROBONDS + MUTFUNDS  + SHARES+ OTHERFUNDS, family = binomial, data = full.df)
+
+glm(formula = HASSP ~ LTH + TOT + EUROBONDS + MUTFUNDS  + SHARES+ OTHERFUNDS, family = binomial, data = full.df)
+glm(formula = HASSP ~ LTH  +     TOT    +  PERPBONDS + ACCTS  +   EUROBONDS + MUTFUNDS + SHARES , family = binomial, data = full.df)
+
+
+
+x = predict(mod7a,type=response)
+table(full.df$HASSP,x>0.5)
+1641/(1528+75+359+113) => 75% on training set
+too many false negatives
+
+
+# note - to list cols
+unique(subset(gp6,ASSET_TYPE!=30)[c('SUB_ASSET_TYPE','SUB_ASSET_DESC')])
+##similarly
+unique(gp6[gp6$ASSET_TYPE!=30,c('ASSET_TYPE','ASSET_DESC')])
+
+#checking
+full.df[full.df$X=='400002-1',]
+
+
+changing to f                 
+f = addColumn(6,'LOANS', f)
+
+f = addColumn(1,	'ACCTS',f
+f = addColumn(22200,	'PERPBONDS',f)
+f = addColumn(22290,	'EUROBONDS',f)
+f = addColumn(22400,	'MUTFUNDS',f)
+f = addColumn(22500,	'SHARES',f)
+f = addColumn(22403,	'OTHFUNDS',f)
+f = addColumn(22503,	'PREFSH',f)
+f = addColumn(5,	'MM',f)
+f = addColumn(22280,	'AMTZBONDS',f)
+f = addColumn(22450,	'HEDGEFUNDS',f)
+
+f = addColumn(22402,'PRIVEQ',f)
+f = addColumn(22292	,'CORPBONDS',f)
+f = addColumn(22952	,'INSURPOLICY',f)
+f = addColumn(22502	,'RIGHTS',f)
+f = addColumn(22240	,'CONVBONDS',f)
+f = addColumn(22282	,'WARRANTS',f)
+f = addColumn(4	,'GUARNTES',f)
+f = addColumn(22330	,'FRN',f)
+f = addColumn(2	,'FX',f)
+f = addColumn(22291	,'GOVBONDS',f)
+f = addColumn(22901	,'EXTDEP',f)
+f = addColumn(20800	,'FXOPTS',f)
+f = addColumn(22950	,'PROPERTY',f)
+f = addColumn(22350	,'TBILLS',f)
+f = addColumn(28801	,'EQOPTS',f)
+
+## similarly for assets
+f = addColumn2(1,	'CurrentAccounts_',f)
+f = addColumn2(20,	'FixedIncome_',f)
+f = addColumn2(40,	'MutualFunds_',f)
+f = addColumn2(50,	'Equities_',f)
+f = addColumn2(5,	'Deposits_',f)
+f = addColumn2(6,	'Loans_',f)
+f = addColumn2(92,	'ExtInsurancePolicy_',f)
+f = addColumn2(4,	'Guarantees_',f)
+f = addColumn2(2,	'ForeignExchange_',f)
+f = addColumn2(90,	'ExternalDeposits_',f)
+f = addColumn2(80,	'Derivatives_',f)
+
+
+f = addColumn2(30,	'StructuredNotes_',f)
+
+
+
+
+
+PRIVEQ      CORPBONDS   INSURPOLICY RIGHTS      CONVBONDS
+WARRANTS    GUARNTES    FRN        
+FX          GOVBONDS    EXTDEP      FXOPTS      PROPERTY    TBILLS      EQOPTS
+
+##################################################################################3
+SAT= 1
+XNAM='ACCTS'
+
+full.df[XNAM]<-NULL
+
+#BASE = subset(gp6, SUB_ASSET_TYPE==SAT) #beter style airquality[airquality$Month == 8 & airquality$Temp > 90, ]
+
+BASE = gp6[gp6$SUB_ASSET_TYPE==SAT,]
+head(BASE)
+
+nrow(BASE)
+
+s = aggregate(BASE$SEQUENCE_NO, list(BASE$PORTFOLIO_NO), length)
+s
+
+names(s)[1]='X'
+names(s)[2]=XNAM
+full.df = merge(full.df, s, by='X', all=TRUE)
+full.df[XNAM][is.na(full.df[XNAM])]
+full.df[XNAM][is.na(full.df[XNAM])] <- 0
+full.df[XNAM]
+
+mean1 = mean(as.matrix(full.df[XNAM]))
+sd1 = sd((as.matrix(full.df[XNAM])))
+full.df[XNAM] = (full.df[XNAM]-mean1)/sd1
+full.df[XNAM]
+mean1
+sd1
+XNAM
+#####################################################################################
+
+
+require(caTools)
+sample = sample.split(f$HASSP, SplitRatio = .75)
+train = subset(f, sample == TRUE)
+test = subset(f, sample == FALSE)
+
+sum(test$HASSP)
+sum(train$HASSP)
+
+#on training set
+x= predict(model15)
+table(train$HASSP,x>0.5)
+nrow(train)
+#(1181+44)/1556
+#78%
+# on test set
+y=predict(model15, newdata=test)
+table(test$HASSP,y>0.5) 
+nrow(test)
+#(395+17)/519
+#79%
+
+addColumn<-function(SAT, XNAM, full.df){
+  full.df[XNAM]<-NULL
+  BASE = gp6[gp6$SUB_ASSET_TYPE==SAT,]
+  head(BASE)
+
+  nrow(BASE)
+
+  s = aggregate(BASE$SEQUENCE_NO, list(BASE$PORTFOLIO_NO), length)
+  s
+
+  names(s)[1]='X'
+  names(s)[2]=XNAM
+  full.df = merge(full.df, s, by='X', all=TRUE)
+  full.df[XNAM][is.na(full.df[XNAM])]
+  full.df[XNAM][is.na(full.df[XNAM])] <- 0
+  full.df[XNAM]
+
+  # mean1 = mean(as.matrix(full.df[XNAM]))
+  # sd1 = sd((as.matrix(full.df[XNAM])))
+  # full.df[XNAM] = (full.df[XNAM]-mean1)/sd1
+  # full.df[XNAM]
+  # mean1
+  # sd1
+  #XNAM
+
+  return (full.df)
+}
+
+
+addColumn2<-function(SAT, XNAM, df){
+  df[XNAM]<-NULL
+  BASE = gp6[gp6$ASSET_TYPE==SAT,]
+  head(BASE)
+
+  nrow(BASE)
+
+  s = aggregate(BASE$SEQUENCE_NO, list(BASE$PORTFOLIO_NO), length)
+  s
+
+  names(s)[1]='X'
+  names(s)[2]=XNAM
+  df = merge(df, s, by='X', all=TRUE)
+  df[XNAM][is.na(df[XNAM])]
+  df[XNAM][is.na(df[XNAM])] <- 0
+  df[XNAM]
+
+  return (df)
+}
+
+
+# realized that LTH (length) was interfering with the other variables
+mod11 = glm(formula = HASSP ~ TOT+PERPBONDS  + EUROBONDS + MUTFUNDS + SHARES + OTHFUNDS+HEDGEFUNDS+PRIVEQ, family = binomial, data=f)
+# 78% accurate on entire set
+
+
+
+model15 = glm(formula = HASSP ~ TOT + PERPBONDS + EUROBONDS + MUTFUNDS + SHARES + OTHFUNDS + HEDGEFUNDS, family = binomial, data = train)
+model16 = glm(formula = HASSP ~ LIAB + TOT + PERPBONDS + EUROBONDS + MUTFUNDS + SHARES + OTHFUNDS + HEDGEFUNDS, family = binomial, data = train)
+
+model17f = glm(formula = HASSP ~ LIAB + TOT + PERPBONDS + EUROBONDS + MUTFUNDS + SHARES + OTHFUNDS + HEDGEFUNDS, family = binomial, data = f)
+
+
+
+note:
+smart way to remove columns from a dataframe
+dfrm2 <- dfrm[ , -grep("has", names(dfrm)) ]
+
+
+################
+#try out with asset types instead of sub asset types
+#as 1% improvement over null is not very impressive
+#AIC was 1986
+
+modelA1 = glm(formula = HASSP ~ LIAB + TOT + CurrentAccounts_ + FixedIncome_ + MutualFunds_ + Equities_ + Deposits_ + Loans_ + ExtInsurancePolicy_ + Guarantees_ + ForeignExchange_ + ExternalDeposits_ + Derivatives_, family = binomial, data = f)
+## 1970 AIC
+## remove LIAB
+modelA2 = glm(formula = HASSP ~ TOT + CurrentAccounts_ + FixedIncome_ + MutualFunds_ + Equities_ + Deposits_ + Loans_ + ExtInsurancePolicy_ + Guarantees_ + ForeignExchange_ + ExternalDeposits_ + Derivatives_, family = binomial, data = f)
+## AIC 2005
+
+ff = f[,2:ncol(f)]
+
+modelAtry1 = glm(formula = HASSP ~ ., family = binomial, data = ff)
+
+##remove loans and deposits - under LIAB already
+modelA2 = glm(formula = HASSP ~ LIAB+ TOT + CurrentAccounts_ + FixedIncome_ + MutualFunds_ + Equities_ + ExtInsurancePolicy_ + Guarantees_ + ForeignExchange_ + ExternalDeposits_ + Derivatives_, family = binomial, data = f)
+## AIC 1967
+
+## rem currentaccts and ext deposits
+modelA2 = glm(formula = HASSP ~ LIAB+ TOT  + FixedIncome_ + MutualFunds_ + Equities_ + ExtInsurancePolicy_  + Guarantees_ +ForeignExchange_ + Derivatives_, family = binomial, data = f)
+summary(modelA2)
+## AIC 1963
+
+##train
+m = glm(formula = HASSP ~ LIAB+ TOT  + FixedIncome_ + MutualFunds_ + Equities_ + ExtInsurancePolicy_  + Guarantees_ +ForeignExchange_ + Derivatives_, family = binomial, data = train)
+
+m = glm(formula = HASSP ~ LIAB+SHARES+EUROBONDS , family = binomial, data = train)
+
+
+summary(m)
+# AIC 1449.7
+x = predict(m, type="response")
+table(train$HASSP,x>0.5)
+    FALSE TRUE
+  0  1149   53
+  1   272   82
+2% improvement over null
+
+test:
+y = predict(m,newdata=test,type="response")
+table(test$HASSP,y>0.5)
+    FALSE TRUE
+  0   381   20
+  1    97   21
+
+
+
+
+---------------------------------------------
+tree = rpart(HASSP ~ ., method="class",data = train, minbucket=5)
+plot(tree, uniform=TRUE)
+text(tree, use.n=TRUE, all=TRUE, cex=.6)
+x = predict(tree, type="class")
+y = predict(tree, newdata=test, type="class")
+table(train$HASSP,x==1)
+table(test$HASSP,y==1)
+
+
+
+------------------------------------------------
+# using randomForest package
+randomForest will default to classification or regression depending on the class of the variable. So if you type
+train$HASSP = as.factor(train$HASSP)
+rfor = randomForest(HASSP ~ .,data = train)
+rfor = randomForest(HASSP ~  hasLIAB + hasFixedIncome + hasMutualFunds + hasEquities,data = train)
+print(rfor)
+importance(rfor)
+
+x = predict(rfor)
+table(train$HASSP,x==1)
+
+test$HASSP = as.factor(test$HASSP)
+y = predict(rfor, test)
+table(test$HASSP,y==1)
+    FALSE TRUE
+  0   373   28
+  1    80   38
+
+
+
+
+
+
+===================================
+===================================
+===================================
+===================================
+eln
+
+eln$PRR=as.factor(eln$PRR)
+tree = randomForest(PRR ~ EXCH+SECTOR+MKTCAP+SECTOR+AVGTURNOVER+CONCENSUS, data=eln)
+Confusion matrix:
+    3   4  5 class.error
+3 317  28 74   0.2434368
+4  19 103 13   0.2370370
+5 132  31 79   0.6735537
+
+
+
+
+sample = sample.split(f$HASSP, SplitRatio = .75)
+train = subset(f, sample == TRUE)
+test = subset(f, sample == FALSE)
+
+
+====================================
+back to gp6
+trying to draw the line
+
+> plot(table(f$HASSP, f$CurrentAccounts_))
+> plot(table(f$HASSP, f$MutualFunds_))
+> plot(table(f$HASSP, f$Equities_))
+
+many non-sp portfolios have 0 equities
+looks like binary may be a better indicator
+
+##add binary features
+> f$hasMutualFunds=f$MutualFunds_>0
+> f$hasEquities=f$Equities_>0
+
+
+
+
+
+
+===========================================
+
+set.seed(28556)
+sample = sample.split(f$HASSP, SplitRatio = .75)
+train = subset(f, sample == TRUE)
+test = subset(f, sample == FALSE)
+#trying binary indicators
+# m = glm(formula = HASSP ~ hasLIAB + hasFixedIncome + hasMutualFunds + hasEquities, family = binomial, data = train)
+#trying one combines indicator
+# m = glm(formula = HASSP ~ ark, family = binomial, data = train)
+# m = glm(formula = HASSP ~ LTH+prod, family = binomial, data = train)
+# m = glm(formula = HASSP ~ Equities_ + LIAB, family = binomial, data = train)
+m = glm(formula = HASSP ~  + LIAB + FixedIncome_, family = binomial, data = train)
+#look at confusion matrix
+x = predict(m, type="response")
+r1 = table(train$HASSP,x>0.5)
+r1
+"train"
+(r1[2,1]+r1[1,2])/(r1[2,1]+r1[2,2]+r1[1,2]+r1[1,1])
+y = predict(m,newdata=test,type="response")
+r1 = table(test$HASSP,y>0.5)
+r1
+"null test"
+c(r1[2,1],r1[2,2])
+(r1[2,1]+r1[2,2])/(r1[2,1]+r1[2,2]+r1[1,2]+r1[1,1])
+"model test"
+c(r1[2,1],r1[1,2])
+(r1[2,1]+r1[1,2])/(r1[2,1]+r1[2,2]+r1[1,2]+r1[1,1])
+#1% difference from null only :-(((((
+
+##frustrated
+##there is a clear difference shown in the plot and numerically
+>tapply(f$Equities_,f$HASSP,mean)
+       0        1 
+1.187773 3.461864 
+> tapply(f$LTH,f$HASSP,mean)
+        0         1 
+6.919526 18.637712
+
+
+# to visualize ... why the results are so crummy
+# theres no separation!
+
+test$HASSP=as.factor(test$HASSP)
+train$HASSP=as.factor(train$HASSP)
+c("red","blue")[test$HASSP]
+plot(test$Equities_,test$LIAB,col=c("red","blue")[test$HASSP])
+
+plot(test$Equities_,test$LIAB,col=c("blue","red")[as.factor(test$HASSP==1 & y>0.5)])
+plot(test$Equities_,test$LIAB,col=c("blue","red")[as.factor(test$HASSP==1 & y<0.5)])
+plot(test$Equities_,test$LIAB,col=c("blue","red")[as.factor(test$HASSP==1)])
+plot(test$Equities_,test$LIAB,col=c("blue","red")[as.factor(y>0.5)])
+
+
+plot(test$FixedIncome_,test$LIAB,col=c("red","blue")[as.factor(test$HASSP==1 & y>0.5)])
+plot(test$FixedIncome_,test$LIAB,col=c("red","blue")[as.factor(y>0.5)])
+plot(test$FixedIncome_,test$LIAB,col=c("red","blue")[as.factor(test$HASSP==1 & y<0.5)])
+plot(test$FixedIncome_,test$LIAB,col=c("red","blue")[as.factor(test$HASSP==0 & y<0.5)])
+
+
+
+
+train$HASSP = as.factor(train$HASSP)
+tree = randomForest(HASSP ~ FixedIncome_+ LIAB, data=train)
+
+
+########################
+# Applying nnet !
+
+# 15 hidden layers
+
+head(f)
+
+ff<-f
+ff$CA<-scale(ff$CurrentAccounts_)
+ff$FI<-scale(ff$FixedIncome_)
+ff$MF<-scale(ff$MutualFunds_)
+ff$EQ<-scale(ff$Equities_)
+ff$DP<-scale(ff$Deposits_)
+ff$LO<-scale(ff$Loans_)
+ff$TOTAL<-scale(ff$TOT)
+
+ff$HASSP = as.factor(ff$HASSP)
+
+ff$<-scale(ff$)
+ff$<-scale(ff$)
+ff$<-scale(ff$)
+
+library('caTools')
+library('nnet')
+set.seed(77896)
+sample = sample.split(ff$HASSP, SplitRatio = .75)
+train = subset(ff, sample == TRUE)
+test = subset(ff, sample == FALSE)
+
+# fir = nnet(HASSP ~ Equities_ + LIAB + FixedIncome_, size=5, data=train, maxit=10000)
+# fir = nnet(HASSP ~ CurrentAccounts_ + FixedIncome_ + MutualFunds_ + Equities_ + Deposits_ + Loans_ + ExtInsurancePolicy_ + Guarantees_ + ForeignExchange_ + ExternalDeposits_ + Derivatives_, size=55, data=train, maxit=10000)
+
+fir = nnet(HASSP ~ TOT + CA + FI + MF + EQ + DP + LO, size=10, data=train, maxit=10000)
+
+x = predict(fir, train, type="class")
+x = predict(fir, train)
+table(train$HASSP,x>0.5)
+y = predict(fir, test)
+table(test$HASSP,y>0.5)
+
+plot(train$FixedIncome,x,col=c("red","blue")[as.factor(test$HASSP==1 & y>0.5)])
+plot(train$FixedIncome,x,col=c("red","blue")[as.factor(test$HASSP==1)])
+
+plot(test$HASSP, y)
+plot(as.numeric(train$HASSP), x)
+
+
+########################################################################
+########################################################################
+########################################################################
+########################################################################
+## ff2 is already scaled ... uses data from ff
+## ff2 = scale(ff2)
+library('caTools')
+library('nnet')
+set.seed(244)
+sample = sample.split(ff2$HASSP, SplitRatio = .75)
+train = subset(ff2, sample == TRUE)
+test = subset(ff2, sample == FALSE)
+
+fir = nnet(HASSP ~ ., size=10, data=train, maxit=10000)
+
+repeat till satisfactory result obtained!
+local minima exist!
+
+plot(fir$fitted.values, col=c("red","blue")[as.factor(train$HASSP==1)])
+
+table(train$HASSP, fir$fitted.values>0.5)
+table(test$HASSP, predict(fir,test)>0.5)
+
+##RMSE
+sqrt(mean((test$HASSP - predict(fir,test))^2))
+
+plot(predict(fir,test), col=c("red","blue")[as.factor(test$HASSP==1)])
+
+plot(predict(fir,test), col=c("red","blue")[as.factor(test$HASSP==0 & predict(fir,test)<0.5)])
+plot(predict(fir,test), col=c("red","blue")[as.factor(test$HASSP==0 & predict(fir,test)>0.5)])
+plot(predict(fir,test), col=c("red","blue")[as.factor(test$HASSP==1 & predict(fir,test)<0.5)])
+plot(predict(fir,test), col=c("red","blue")[as.factor(test$HASSP==1 & predict(fir,test)>0.5)])
+
+
+
+####################################33
+caret package
+"C:\Users\kh63um\extlab\R-Portable\R-Portable.exe" --internet2
+install.packages(" ",type="win.binary")
+
+model = train(HASSP~., ff2, method="nnet", tuneGrid=expand.grid(.size=c(1,5,10),.decay=c(0,0.001,0.1)), maxit=1000) 
+model = train(HASSP~., ff2, method="nnet", linout=TRUE, tuneGrid=expand.grid(.size=c(1,5,10),.decay=c(0,0.001,0.1)), maxit=1000) 
+
+model = train(HASSP ~., ff2, method="nnet", linout=TRUE, maxit=10000)
+
+ps<-predict(model,ff2)
+plot(ff2$HASSP)
+points(ps,col=c("red","blue")[as.factor(ff2$HASSP==1)])
+lines(ps,col=3)
+
+table(ff2$HASSP,ps>0.5)
+
+
+
+
+
+# back to using full unscaled values
+# and numeric HASSP1
+
+model=train(HASSP1 ~ LIAB+LTH+ MutualFunds_ + Equities_+Deposits_+Loans_+Guarantees_+ExternalDeposits_+Derivatives_+ForeignExchange_+TOT, ff4, method='nnet', linout=TRUE, trace=FALSE)
+model=train(HASSP1 ~ LIAB+LTH+ MutualFunds_ + Equities_+Deposits_+Loans_+Guarantees_+ExternalDeposits_+Derivatives_+ForeignExchange_+TOT, ff4, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+model=train(HASSP1 ~ LIAB+LTH + FixedIncome_+ Equities_, ff4, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+RMSE 0.3610498
+
+##################################################################
+Massive Improvement! AHUA ARKA!
+##################################################################
+model=train(HASSP1 ~ LIAB+LTH+ FixedIncome_+Equities_+ MutualFunds_+CurrentAccounts_, ff4, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+RMSE 0.2496134
+    FALSE TRUE
+  0  1509   94
+  1    58  414
+
+
+ps<-predict(model,ff4)
+plot(ff4$HASSP)
+points(ps,col=c("red","blue")[as.factor(ff4$HASSP==1)])
+lines(ps,col=3)
+
+table(ff4$HASSP,ps>0.5)
+
+
+plot(ps)
+points(ps,col=c("red","blue")[as.factor(ff4$HASSP==1)])
+
+
+plot3d(f$LTH,f$Equities_,f$FixedIncome,col=c("red","blue")[as.factor(f$HASSP==1)], size=5)
+plot3d(f$LTH,f$Equities_,f$FixedIncome,col=c("red","blue")[as.factor(ps>0.5)], size=5)
+
+
+http://stackoverflow.com/questions/7743768/using-nnet-for-prediction-am-i-doing-it-right
+http://www.di.fc.ul.pt/~jpn/r/neuralnets/neuralnets.html#using-nns-via-the-caret-package
+http://stats.stackexchange.com/questions/21717/how-to-train-and-validate-a-neural-network-model-in-r
+https://journal.r-project.org/archive/2010-1/RJournal_2010-1_Guenther+Fritsch.pdf
+
+#########################################################################################
+experimenting
+model5=train(HASSP1 ~ LIAB + LTH+ FixedIncome_+Equities_+MutualFunds_+CurrentAccounts_, ff5, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps<-predict(model5,ff5)
+plot(ff5$HASSP1)
+points(ps,col=c("red","blue")[as.factor(ff5$HASSP1==1)])
+# lines(ps,col=3)
+abline(.5,0)
+table(ff5$HASSP1,ps>0.5)
+
+#########################################################################################
+Trying nn to ellist(n universe
+# elnm = train(PRR ~ EXCH + SECTOR+ MKTCAP + AVGTURNOVER+CONCENSUS, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE)
+# Accuracy 0.6057875 
+# poor representation of '5'
+
+elnm = train(PRR ~ EXCH + SECTOR + MKTCAP, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# Accuracy 0.6110647
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+
+k1=eln$AVGTURNOVER/eln$MKTCAP
+elnm = train(PRR ~ K1 + EXCH, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# Accuracy 0.6184085
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+
+k1 but add sector
+elnm = train(PRR ~ K1 + SECTOR + EXCH, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# Accuracy 0.6294593
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+
+
+elnm = train(PRR ~ EXCH + SECTOR+ K1 +CONCENSUS, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# Accuracy 0.6232939
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+
+elnm = train(PRR ~ EXCH + MKTCAP + K1, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# Accuracy 0.6327145
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+
+elnm = train(PRR ~ EXCH + MKTCAP + K1, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# Accuracy 0.
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+
+z = paste(eln$EXCH,eln$SECTOR)
+eln$Z = z
+
+# this improves presence of 5
+elnm = train(PRR ~ Z + MKTCAP + K1, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# 0.6109505
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+
+
+elnm = train(PRR ~ Z + MKTCAP + K1 + CONCENSUS, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# 0.6109505
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+   ps
+      3   4   5
+  3 327  29  63
+  4  15 117   3
+  5 116  36  90
+# still too fat but far far better than before
+
+u = 1/eln$CONCENSUS
+elnm = train(PRR ~ Z + MKTCAP + K1 + U, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+#terrible drop in 5
+
+
+###best so far????
+elnm = train(PRR ~ Z + MKTCAP, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE) # 
+# 0.6109505
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+   ps
+      3   4   5
+  3 332  23  64
+  4  17 110   8
+  5 111  26 105
+
+Try skip=TRUE
+elnm = train(PRR ~ Z + MKTCAP, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE, skip=TRUE) # 
+# 0.6109505
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+   ps
+      3   4   5
+  3 327  29  63
+  4  14 117   4
+  5 111  32  99
+# doesnt really help
+
+
+## study
+aggregate(eln$MKTCAP, list(eln$PRR), mean)
+
+
+
+
+===============================================
+gp6 = read.csv("gp6.csv")
+
+# top of the pack
+sort(table(gp6[gp6$SUB_ASSET_DESC=='Shares',c('DESCRIPTION')]))
+
+grep("CITIGROUP INC", names(xt[,1]))
+[1]  608  609  610  611  612  613  614  615  616  617  618 2244
+names(xt[,1][608])
+
+> a = xt[608,]
+> xt[608,][a>0]
+
+
+gp6[gp6$SUB_ASSET_DESC=='Shares',c('PORTFOLIO_NO','DESCRIPTION')]
+table with row per portfolio and every share in cols!!!
+x = table(gp6[gp6$SUB_ASSET_DESC=='Shares',c('PORTFOLIO_NO','DESCRIPTION')])
+crossprod to find sot products
+
+wow have i learnt some R or what
+> x[3,][x[3,]>0]
+BANK OF AMERICA CORPORATION               CITIGROUP INC 
+                          1                           1 
+for(i in 1:nrow(x))
+{
+  j = crossprod(x[3,],x[i,])
+  if(j>0)
+  {
+    cat (i , crossprod(x[3,],x[i,]), "\n");
+  }
+}
+
+# invert for use
+xt = table(gp6[gp6$SUB_ASSET_DESC=='Shares',c('DESCRIPTION','PORTFOLIO_NO')])
+# 608 is CITIGROUP INC
+mydf = NULL
+for(i in 1:nrow(xt))
+{
+  j = crossprod(xt[1275,],xt[i,])
+  if(j>0)
+  {
+    cat (names(xt[,1][i]) ,j, "\n");
+    mydf = rbind(mydf, data.frame(name=names(xt[,1][i]), count=j))
+  }
+}
+
+
+mydf[order(-mydf$count),]  ##use minus for ulta sort
+
+
+note: remove factors by t = t[drop=TRUE]
+
+
+#############fixed income########################
+t = gp6[gp6$ASSET_TYPE==20,'DESCRIPTION']
+t = t[drop=TRUE]
+##the top fixed income
+sort(table(t))
+
+xb = table(gp6[gp6$ASSET_TYPE==20,c('DESCRIPTION','PORTFOLIO_NO')])
+
+mydf = NULL
+for(i in 1:nrow(xb))
+{
+
+  # 265 is BARODA
+  j = crossprod(xb[2014,],xb[i,])
+  if(j>0)
+  {
+    cat (names(xb[,1][i]) ,j, "\n");
+    mydf = rbind(mydf, data.frame(name=names(xb[,1][i]), count=j))
+  }
+}
+
+
+mydf[order(-mydf$count),]  ##use minus for ulta sort
+
+
+
+##################################################3
+k means clustering
+
+# isolate interesting numerical values
+clusdata = f[,33:44]
+chusdataorig = clusdata
+clusdata = as.data.frame(scale(clusdata))
+
+
+wss = (nrow(clusdata)-1)*sum(apply(clusdata,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(clusdata, centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",ylab="Within groups sum of squares") 
+# seen! Bend at ~ 6  
+fit = kmeans(clusdata,4)
+aggregate(clusdata,by=list(fit$cluster),FUN=mean)
+
+# points(fit$centers[,c("FixedIncome_","Equities_")],col=1:, pch=8, cex=5)
+
+aggregate(f,by=list(fit$cluster),FUN=mean)
+
+Examine each cluster, describe them verbally
+fit$centers
+  StructuredNotes_  Equities_ FixedIncome_
+1        0.2380494  0.3056714    2.1675870
+2        0.3879744  4.7648188    1.1616369
+3       -0.2043804 -0.2032658   -0.2958126
+4        4.3492528  0.6579052    0.4327431
+
+
+plot3d(f[,"FixedIncome_"],f[,"StructuredNotes_"],f[,"Equities_"],col=fit$cluster, size=5)
+
+##beautiful plot!
+plot(clusdata[c("FixedIncome_","Equities_")],col=fit$cluster, bg=fit$cluster, pch=21)
+plot(clusdata[c("FixedIncome_","StructuredNotes_")],col=fit$cluster, bg=fit$cluster, pch=21)
+plot(clusdata[c("Equities_","StructuredNotes_")],col=fit$cluster, bg=fit$cluster, pch=21)
+
+points(fit$centers[,c("FixedIncome_","Equities_")],col=1:4, pch=8, cex=5) 
+
+
+plot  (clusdata[,'StructuredNotes_'],  col=1, pch=21,ylim=c(-1,16))
+plot(clusdata[,'StructuredNotes_']   ,col=(fit$cluster!=4), bg=(fit$cluster!=4), pch=21,ylim=c(-1,16))
+points  (clusdata[,'StructuredNotes_'],  col=6, pch=21,ylim=c(-1,16))
+plot(clusdata[,'StructuredNotes_']   ,col=(fit$cluster==4), bg=(fit$cluster==4), pch=21,ylim=c(-1,16))
+points  (clusdata[,'StructuredNotes_'],  col=6, pch=21,ylim=c(-1,16))
+points  (clusdata[,'StructuredNotes_'],  col=7, pch=21,ylim=c(-1,16))
+
+points(clusdata[fit$cluster==3,c("StructuredNotes_")],col=3, pch=21,ylim=c(-1,16))
+points(clusdata[fit$cluster==4,c("StructuredNotes_")],col=4, bg=4, pch=21,ylim=c(-1,16))
+
+
+require(rgl)
+plot3d(clusdata[,1],clusdata[,2],clusdata[,3],col=fit$cluster, size=5)
+plot3d(clusdata[,1],clusdata[,2],clusdata[,3],col=fit$cluster, size=5)
+
+
+# heirarchical clustering
+d <- dist(clusdata, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward") 
+plot(fit) # display dendogram
+groups <- cutree(fit, k=4) # cut tree into 4 clusters
+ # draw dendogram with red borders around the 4 clusters 
+rect.hclust(fit, k=4, border="4") 
+
+plot(clusdata[c("FixedIncome_","Equities_")],col=groups, bg=groups, pch=21)
+plot(clusdata[c("FixedIncome_","StructuredNotes_")],col=groups, bg=groups, pch=21)
+plot(clusdata[c("Equities_","StructuredNotes_")],col=groups, bg=groups, pch=21)
+
+aggregate(f,by=list(groups),FUN=mean)
+aggregate(clusdata,by=list(groups),FUN=mean)
+
+
+
+points(clusdata[groups==4,c("FixedIncome_","Equities_")],col=4, bg=4, pch=21)
+
+
+#####################################################################
+ET VC 
+require(caTools)
+require(caret)
+gp6 = read.csv("gp6.csv")
+eln = read.csv("eln.csv")
+f = read.csv("f.csv")
+names(f)[2]
+names(f)[2]="PORTFOLIO_NO"
+
+
+model5=train(HASSP ~ LIAB + LTH+ FixedIncome_+Equities_+MutualFunds_+CurrentAccounts_, f, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps<-predict(model5,f)
+plot(f$HASSP)
+abline(.5,0)
+points(ps,col=c("red","blue")[as.factor(f$HASSP==1)])
+table(f$HASSP,ps>0.5)
+model5
+
+
+
+
+require(randomForest)
+tree2 = randomForest(PRR ~ Z+K+CONCENSUS, ntree=10000, data=ee)
+tree2
+
+
+
+elnm = train(PRR ~ Z + CONCENSUS, ee, method='nnet', trace=FALSE, maxint=10000, linout=FALSE, skip=TRUE) # 
+#concensus helps!
+ps = predict(elnm, ee)
+table(ee$PRR, ps)
+
+
+
+
+
+#sample = sample.split(f$HASSP, SplitRatio = .75)
+#tr = subset(f, sample == TRUE)
+
+#s = sample.split(tr$HASSP, SplitRatio = 0.3)
+#train = subset(tr, s == TRUE)
+
+sample = sample.split(f$HASSP, SplitRatio = .75)
+train = subset(f, sample == TRUE)
+test = subset(f, sample == FALSE)
+
+nrow(train)
+nrow(test)
+
+model5=train(HASSP ~ LTH + LIAB+ FixedIncome_+Equities_+MutualFunds_+CurrentAccounts_, train, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps<-predict(model5,train)
+table(train$HASSP,ps>0.5)
+
+ps<-predict(model5,test)
+table(test$HASSP,ps>0.5)
+
+nrow(train)
+
+
+
+## after meeting actual data scientist
+# k means clustering
+fit$cluster
+
+data1 = f[fit$cluster==1,]
+data2 = f[fit$cluster==2,]
+data3 = f[fit$cluster==3,]
+data4 = f[fit$cluster==4,]
+
+
+
+model1=train(HASSP ~ LTH + LIAB+ FixedIncome_+Equities_+MutualFunds_+CurrentAccounts_, data1, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps1<-predict(model1,data1)
+table(data1$HASSP,ps1>0.5)
+
+model2=train(HASSP ~ LTH + LIAB+ FixedIncome_+Equities_+MutualFunds_+CurrentAccounts_, data2, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps2<-predict(model2,data2)
+table(data2$HASSP,ps2>0.5)
+
+model3=train(HASSP ~ LTH + LIAB+ FixedIncome_+Equities_+MutualFunds_+CurrentAccounts_, data3, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps3<-predict(model3,data3)
+table(data3$HASSP,ps3>0.5)
+
+model4=train(HASSP ~ LTH + LIAB+ FixedIncome_+Equities_+MutualFunds_+CurrentAccounts_, data4, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps4<-predict(model4,data4)
+table(data4$HASSP,ps4>0.5)
+
+
+plot(data1$HASSP)
+abline(.5,0)
+points(ps1,col=c("red","blue")[as.factor(data1$HASSP==1)])
+table(data1$HASSP,ps1>0.5)
+
+plot(data2$HASSP)
+abline(.5,0)
+points(ps2,col=c("red","blue")[as.factor(data2$HASSP==1)])
+table(data2$HASSP,ps2>0.5)
+
+plot(data3$HASSP)
+abline(.5,0)
+points(ps3,col=c("red","blue")[as.factor(data3$HASSP==1)])
+table(data3$HASSP,ps3>0.5)
+
+plot(data4$HASSP)
+abline(.5,0)
+points(ps4,col=c("red","blue")[as.factor(data4$HASSP==1)])
+table(data4$HASSP,ps4>0.5)
+
+
+wss = (nrow(clusdata1)-1)*sum(apply(clusdata1,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(clusdata1, centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",ylab="Within groups sum of squares") 
+# seen! Bend at ~ 6  
+fit = kmeans(clusdata1,4)
+aggregate(clusdata1,by=list(fit$cluster),FUN=mean)
+plot3d(clusdata1[,1],clusdata1[,2],clusdata1[,3],col=fit$cluster, size=8)
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+HIMMEL2
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+library(caret)
+library(rgl)
+
+eln = read.csv("ELNUniv.csv")
+summary(eln)
+z = paste(eln$EXCH,eln$SECTOR)
+eln$Z = z
+eln$Z = z
+
+eln$PRR=as.factor(eln$PRR)
+
+# as.numeric(levels(f))[f]
+t = as.character(eln$MKTCAP)
+t = as.numeric(gsub(",","", t))
+eln$MKTCAP = t
+t = as.character(eln$AVGTURNOVER)
+t = as.numeric(gsub(",","", t))
+eln$AVGTURNOVER = t
+
+head( eln[with(eln,order(-MKTCAP)),])
+
+table(eln$PRR, eln$EXCH)
+table(eln$PRR, eln$SECTOR)
+plot(eln$CONCENSUS, col=c("green","blue","red")[as.factor(eln$PRR)])
+plot(eln$AVGTURNOVER, col=c("green","blue","red")[as.factor(eln$PRR)], xlim=c(0,1000))
+plot(eln$CONCENSUS, eln$AVGTURNOVER, col=c("green","blue","red")[as.factor(eln$PRR)], xlim=c(3,5))
+
+elnm = train(PRR ~ Z + MKTCAP+ AVGTURNOVER + CONCENSUS, eln, method='nnet', trace=FALSE, maxint=10000, linout=FALSE, skip=TRUE)
+
+##scaling did not help much
+
+elnm
+
+ps = predict(elnm, eln)
+table(eln$PRR, ps)
+
+    ps
+      3   4   5
+  3 320  24  75
+  4   8 120   7
+  5  77  36 129
+
+plot3d(eln$AVGTURNOVER, eln$CONCENSUS, eln$MKTCAP, col=c("green","blue","red")[as.factor(eln$PRR)],size=7)
+plot3d(eln$AVGTURNOVER, eln$CONCENSUS, eln$MKTCAP, col=c("green","blue","red")[as.factor(ps)],size=7)
+
+
+table(eln$PRR, eln$EXCH)
+table(ps, eln$EXCH)
+table(eln$PRR, eln$SECTOR)
+table(ps, eln$SECTOR)
+
+
+
+############clustering
+ee = eln[,c("AVGTURNOVER","MKTCAP","CONCENSUS")]
+# isolate interesting numerical values
+clusdata = as.data.frame(scale(ee))
+wss = (nrow(clusdata)-1)*sum(apply(clusdata,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(clusdata, centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",ylab="Within groups sum of squares") 
+# seen! Bend at ~ 4  
+fit = kmeans(clusdata,4)
+aggregate(clusdata,by=list(fit$cluster),FUN=mean)
+
+aggregate(eln,by=list(fit$cluster),FUN=mean)
+
+Examine each cluster, describe them verbally
+fit$centers
+table(fit$cluster)
+plot3d(clusdata$AVGTURNOVER, clusdata$CONCENSUS, clusdata$MKTCAP, col=c("red","blue","green", "grey")[as.factor(fit$cluster)],size=7)
+
+
+# heirarchical clustering ##########################################
+KK=3
+d <- dist(clusdata, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward") 
+plot(fit) # display dendogram
+groups <- cutree(fit, k=KK) # cut tree into 4 clusters
+ # draw dendogram with red borders around the 4 clusters 
+rect.hclust(fit, k=KK, border="4") 
+# plot3d(clusdata$AVGTURNOVER, clusdata$CONCENSUS, clusdata$MKTCAP, col=c("red","blue","green", "grey")[as.factor(groups)],size=7)
+#plot3d(clusdata$AVGTURNOVER, clusdata$CONCENSUS, clusdata$MKTCAP, col=as.factor(groups),size=7)
+plot3d(eln$AVGTURNOVER, eln$CONCENSUS, eln$MKTCAP, col=as.factor(groups),size=7)
+
+
+############################
+# library("randomForest")
+# data = 
+# tree = randomForest(PRR ~ as.factor(Z) + MKTCAP+ AVGTURNOVER + CONCENSUS, ntree=1000, data=eln)
+# nrows(eln[fit$cluster==1,])
+# eln$Z = as.factor(eln$Z)
+# tree = randomForest(PRR ~ Z + MKTCAP+ AVGTURNOVER + CONCENSUS, ntree=1000, data=eln[fit$cluster==1,])
+
+
+
+-----------------------------------------------
+f = read.csv("f.csv")
+## f shd be there
+#f$HASSP = as.factor(f$HASSP)
+
+names(f)[2]
+names(f)[2]="PORTFOLIO_NO"
+
+f$together = f$CurrentAccounts_+f$FixedIncome_+f$MutualFunds_+f$Equities_+f$Deposits_+f$Loans_+f$ExtInsurancePolicy_+f$Guarantees_+f$ExternalDeposits_+f$Derivatives_+f$ForeignExchange_
+
+t = gp6[gp6$ASSET_OR_LIAB!="ASSET",]
+s = aggregate(t$VALUE_IN_VAL_CCY, list(t$PORTFOLIO_NO), length)
+names(s)[1]='PORTFOLIO_NO'
+names(s)[2]='LIAB'
+f = merge(f, s, by='PORTFOLIO_NO', all=TRUE)
+f[is.na(f$LIAB),"LIAB"]=0
+f$LIAB = abs(f$LIAB)
+
+#the problem
+plot3d(f$Equities_,f$FixedIncome_,f$StructuredNotes_, size=5)
+plot3d(f$Equities_,f$FixedIncome_,f$MutualFunds_, col=c("red","blue")[as.factor(f$HASSP==1)],size=5)
+
+
+data = f[,c("LTH","TOT","LIAB", "together", "CurrentAccounts_","FixedIncome_", "MutualFunds_", "Equities_" , "Deposits_"   , "Loans_"     , "ExtInsurancePolicy_" , "Guarantees_"       , "ExternalDeposits_" , "Derivatives_"      , "ForeignExchange_")]
+
+data = as.data.frame(scale(data))
+
+data$HASSP = f$HASSP
+
+
+##split data?
+
+# change this
+train = data
+
+##
+
+# isolate interesting numerical values
+clusdata = as.data.frame(scale(data[,c("FixedIncome_","MutualFunds_", "Equities_")]))
+wss = (nrow(clusdata)-1)*sum(apply(clusdata,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(clusdata, centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",ylab="Within groups sum of squares") 
+
+fit = kmeans(clusdata,2)
+aggregate(clusdata,by=list(fit$cluster),FUN=mean)
+
+aggregate(data,by=list(fit$cluster),FUN=mean)
+
+# Examine each cluster, describe them verbally
+fit$centers
+
+table(fit$cluster)
+
+data1 = train[fit$cluster==1,]
+data2 = train[fit$cluster==2,]
+data3 = train[fit$cluster==3,]
+data4 = train[fit$cluster==4,]
+
+#check with full
+model=train(HASSP ~ LIAB+together+CurrentAccounts_+FixedIncome_+MutualFunds_+Equities_+Deposits_+Loans_+ExtInsurancePolicy_+Guarantees_+ExternalDeposits_+Derivatives_+ForeignExchange_, data, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+model=train(HASSP ~ together+FixedIncome_+Equities_, data, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+model=train(HASSP ~    LIAB+together+ FixedIncome_+Equities_+ MutualFunds_+CurrentAccounts_, data, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+
+
+# modelLTH=train(HASSP ~ LIAB+LTH+ FixedIncome_+Equities_+ MutualFunds_+CurrentAccounts_, data, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+modelLTH=train(HASSP ~ LIAB+LTH+CurrentAccounts_+FixedIncome_+MutualFunds_+Equities_+Deposits_+Loans_+ExtInsurancePolicy_+Guarantees_+ExternalDeposits_+Derivatives_+ForeignExchange_, data, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+
+
+ps<-as.numeric(predict(model,data))
+table(data$HASSP,ps>0.5)
+
+ps<-as.numeric(predict(modelLTH,data))
+table(data$HASSP,ps>0.5)
+
+plot(data$HASSP)
+abline(.5,0)
+points(ps,col=c("red","blue")[as.factor(data$HASSP==1)])
+table(data$HASSP,ps>0.5)
+
+
+model1=train(HASSP ~ together+CurrentAccounts_+FixedIncome_+MutualFunds_+Equities_+Deposits_+Loans_+ExtInsurancePolicy_+Guarantees_+ExternalDeposits_+Derivatives_+ForeignExchange_, data1, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps1<-as.numeric(predict(model1,data1))
+table(data1$HASSP,ps1>0.5)
+
+model2=train(HASSP ~ together+CurrentAccounts_+FixedIncome_+MutualFunds_+Equities_+Deposits_+Loans_+ExtInsurancePolicy_+Guarantees_+ExternalDeposits_+Derivatives_+ForeignExchange_, data2, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps2<-predict(model2,data2)
+table(data2$HASSP,ps2>0.5)
+
+model3=train(HASSP ~  together+CurrentAccounts_+FixedIncome_+MutualFunds_+Equities_+Deposits_+Loans_+ExtInsurancePolicy_+Guarantees_+ExternalDeposits_+Derivatives_+ForeignExchange_, data3, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps3<-predict(model3,data3)
+table(data3$HASSP,ps3>0.5)
+
+model4=train(HASSP ~  together+CurrentAccounts_+FixedIncome_+MutualFunds_+Equities_+Deposits_+Loans_+ExtInsurancePolicy_+Guarantees_+ExternalDeposits_+Derivatives_+ForeignExchange_, data4, method='nnet', linout=FALSE, trace=FALSE, maxint=10000)
+ps4<-predict(model4,data4)
+table(data4$HASSP,ps4>0.5)
